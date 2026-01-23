@@ -25,6 +25,8 @@ const muteBtn = document.getElementById('muteBtn');
 
 // State
 let isMuted = false;
+let muteTimer = null;
+const SNOOZE_DURATION = 3 * 60 * 1000; // 3 minutes
 
 // Team member names from the layout
 const teamMembers = [
@@ -41,6 +43,18 @@ let isLayoutFlipped = false;
 // Spam prevention
 let lastAlertTime = 0;
 const ALERT_COOLDOWN = 1000; // 1 second
+
+// Shortcut display labels
+const shortcutLabels = {
+  'numdiv': 'Num /',
+  'nummult': 'Num *',
+  'numadd': 'Num +',
+  'numsub': 'Num -',
+  'f1': 'F1',
+  'f2': 'F2',
+  'f3': 'F3',
+  'f4': 'F4'
+};
 
 // Initialize app
 async function init() {
@@ -64,10 +78,43 @@ async function init() {
   // Connect to server
   connectToServer();
 
+  // Listen for settings updates
+  window.electronAPI.onSettingsUpdated((newSettings) => {
+    settings = newSettings;
+    updateShortcutHints();
+    // Also update username if changed (though restart usually required for fully applying changes)
+    if (newSettings.username !== currentUsername) {
+        currentUsername = newSettings.username;
+        currentUsernameEl.textContent = currentUsername || 'Not configured';
+    }
+  });
+
   // Listen for global mute shortcut
   window.electronAPI.onToggleMute(() => {
     toggleMute();
   });
+
+  // Update hints
+  updateShortcutHints();
+  
+  // Sync initial mute state (unmuted by default)
+  window.electronAPI.updateMuteState(isMuted);
+}
+
+function updateShortcutHints() {
+  if (!settings) return;
+
+  const boss1Label = shortcutLabels[settings.boss1Shortcut] || 'Num /';
+  const boss2Label = shortcutLabels[settings.boss2Shortcut] || 'Num *';
+  const muteLabel = shortcutLabels[settings.muteShortcut] || 'Num -';
+
+  const boss1Hint = document.getElementById('boss1Hint');
+  const boss2Hint = document.getElementById('boss2Hint');
+  const muteHint = document.getElementById('muteHint');
+
+  if (boss1Hint) boss1Hint.textContent = `${boss1Label} = Boss 1`;
+  if (boss2Hint) boss2Hint.textContent = `${boss2Label} = Boss 2`;
+  if (muteHint) muteHint.textContent = `${muteLabel} = Mute`;
 }
 
 function flipLayout() {
@@ -333,9 +380,6 @@ function sendAlert(bossDirection = 'boss1') {
     // For opposite side: Boss 1 comes from right, Boss 2 from left
     if (bossDirection === 'boss1') {
        // Right side, arrow pointing left (inwards/back)? Or pointing towards content?
-       // Based on user's manual edit "right <===" implies pointing Left.
-       // User previously asked to "Reverse" the big overlay.
-       // Let's match the visual style: Text "Right" + Icon "Arrow Back" (Left)
        directionParts = { text: 'right', icon: 'arrow_back' };
     } else {
        directionParts = { text: 'left', icon: 'arrow_forward' };
@@ -423,14 +467,25 @@ function handleAlertReceived(data) {
   // Show notification - ONLY if not muted
   const isSelf = data.sender === currentUsername;
   if (!isSelf && !isMuted) {
-    // Strip HTML from message for native notification
+    // Strip HTML and fix icons for native notification
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = data.message;
+    
+    // Remove material icons spans entirely from the text representation
+    // or replace known icons with unicode equivalents
+    const icons = tempDiv.querySelectorAll('.material-icons');
+    icons.forEach(icon => {
+        const iconText = icon.textContent;
+        if (iconText === 'arrow_forward') icon.textContent = '→';
+        else if (iconText === 'arrow_back') icon.textContent = '←';
+        else icon.remove();
+    });
+
     const plainMessage = tempDiv.textContent || tempDiv.innerText || '';
 
     window.electronAPI.showNotification({
       title: '🚨 BOSS ALERT!',
-      body: `${data.sender}: ${plainMessage}`
+      body: `${data.sender}: ${plainMessage.trim()}`
     });
   }
 }
@@ -440,13 +495,6 @@ function showBigArrowOverlay(sideText) {
     overlay.className = 'big-arrow-overlay';
     
     // Icon: arrow_back (West/Left), arrow_forward (East/Right)
-    // REVERSED as requested: Left Side gets Right Arrow, Right Side gets Left Arrow?
-    // User Request: "The arrow of the overlay right/left side is reverse. Please reverse them."
-    // Previously: LEFT -> arrow_back (Points Left), RIGHT -> arrow_forward (Points Right)
-    // Now: LEFT -> arrow_forward (Points Right), RIGHT -> arrow_back (Points Left)
-    // This implies "Look towards Left" means arrow points Left? Or "Alert FROM Left" means arrow points Right (away)?
-    // Context: "Boss 1 Alert from Left Side". Usually you want to look at the boss? Or run away?
-    // User said "reverse them". So I will flip the icon mapping.
     const iconName = sideText === 'LEFT' ? 'arrow_forward' : 'arrow_back';
     
     overlay.innerHTML = `
@@ -468,18 +516,36 @@ function showBigArrowOverlay(sideText) {
 
 function toggleMute() {
     isMuted = !isMuted;
+    
+    // Clear any existing timer
+    if (muteTimer) {
+        clearTimeout(muteTimer);
+        muteTimer = null;
+    }
+
     const icon = muteBtn.querySelector('.material-icons');
     if (isMuted) {
         icon.textContent = 'volume_off';
-        muteBtn.classList.add('active'); // active means muted/alert state here? Or just styled.
+        muteBtn.classList.add('active');
         muteBtn.style.color = '#ff6b6b';
-        showToast('Notifications muted', 'error'); // using error style for visibility
+        showToast('Notifications snoozed for 3 min', 'error');
+        
+        // Auto-unmute after 3 minutes
+        muteTimer = setTimeout(() => {
+            if (isMuted) {
+                toggleMute(); // This will flip it back to unmuted
+                showToast('Snooze ended - Notifications active');
+            }
+        }, SNOOZE_DURATION);
     } else {
         icon.textContent = 'volume_up';
         muteBtn.classList.remove('active');
         muteBtn.style.color = '';
         showToast('Notifications unmuted');
     }
+    
+    // Update tray menu
+    window.electronAPI.updateMuteState(isMuted);
 }
 
 function showToast(message, type = 'success') {

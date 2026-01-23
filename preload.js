@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Online count update
   updateOnlineCount: (count) => ipcRenderer.send('update-online-count', count),
   
+  // Update mute state for tray
+  updateMuteState: (isMuted) => ipcRenderer.send('update-mute-state', isMuted),
+
   // Alert trigger from shortcut
   onTriggerAlert: (callback) => {
     ipcRenderer.on('trigger-alert', callback);
@@ -27,5 +30,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Toggle mute from shortcut
   onToggleMute: (callback) => {
     ipcRenderer.on('toggle-mute', callback);
+  },
+  
+  // Settings updated
+  onSettingsUpdated: (callback) => {
+    ipcRenderer.on('settings-updated', (event, newSettings) => callback(newSettings));
   }
 });

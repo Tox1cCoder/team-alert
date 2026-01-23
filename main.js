@@ -20,12 +20,17 @@ let mainWindow = null;
 let settingsWindow = null;
 let tray = null;
 let isQuitting = false;
+let currentIsMuted = false;
+let currentOnlineUsers = 0;
 
 // Prevent multiple instances
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
+  // core mechanic: disable hardware acceleration to save RAM
+  app.disableHardwareAcceleration();
+
   app.on('second-instance', () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
@@ -143,7 +148,7 @@ function createTray() {
   });
 }
 
-function updateTrayMenu(onlineUsers = 0) {
+function updateTrayMenu() {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `Team Alert - ${store.get('username') || 'Not configured'}`,
@@ -153,8 +158,21 @@ function updateTrayMenu(onlineUsers = 0) {
       type: 'separator'
     },
     {
-      label: `Online: ${onlineUsers} members`,
+      label: `Online: ${currentOnlineUsers} members`,
       enabled: false
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Mute Notifications',
+      type: 'checkbox',
+      checked: currentIsMuted,
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('toggle-mute');
+        }
+      }
     },
     {
       type: 'separator'
@@ -298,6 +316,11 @@ ipcMain.handle('save-settings', (event, settings) => {
   // Check if critical settings changed - trigger restart
   const needsRestart = (oldUsername !== settings.username) || (oldServerUrl !== settings.serverUrl);
 
+  // Notify main window of settings update
+  if (mainWindow) {
+    mainWindow.webContents.send('settings-updated', settings);
+  }
+
   return { 
     success: true,
     needsRestart: needsRestart
@@ -305,7 +328,13 @@ ipcMain.handle('save-settings', (event, settings) => {
 });
 
 ipcMain.on('update-online-count', (event, count) => {
-  updateTrayMenu(count);
+  currentOnlineUsers = count;
+  updateTrayMenu();
+});
+
+ipcMain.on('update-mute-state', (event, isMuted) => {
+  currentIsMuted = isMuted;
+  updateTrayMenu();
 });
 
 ipcMain.on('restart-app', () => {
