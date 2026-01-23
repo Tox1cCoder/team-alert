@@ -21,6 +21,10 @@ const alertBoss2Btn = document.getElementById('alertBoss2');
 const settingsBtn = document.getElementById('settingsBtn');
 const boss1Indicator = document.getElementById('boss1Indicator');
 const boss2Indicator = document.getElementById('boss2Indicator');
+const muteBtn = document.getElementById('muteBtn');
+
+// State
+let isMuted = false;
 
 // Team member names from the layout
 const teamMembers = [
@@ -59,6 +63,11 @@ async function init() {
 
   // Connect to server
   connectToServer();
+
+  // Listen for global mute shortcut
+  window.electronAPI.onToggleMute(() => {
+    toggleMute();
+  });
 }
 
 function flipLayout() {
@@ -133,6 +142,12 @@ function flipLayout() {
   // Update button labels
   document.getElementById('alertBoss1').querySelector('.alert-subtitle').textContent = 'From right side';
   document.getElementById('alertBoss2').querySelector('.alert-subtitle').textContent = 'From left side';
+
+  // Swap Red/Blue buttons (Boss 1/Boss 2 buttons)
+  // Boss 1 is Red, Boss 2 is Blue. In flipped mode, we want Blue (left) then Red (right) layout-wise to match indicators?
+  // User asked: "swap 2 button Boss 1 Alert and Boss 2 Alert (red and blue button)."
+  const alertButtonsContainer = document.querySelector('.alert-buttons');
+  alertButtonsContainer.appendChild(alertBoss1Btn); // Moves Boss 1 (Red) to the end (Right side)
 }
 
 function connectToServer() {
@@ -312,16 +327,33 @@ function sendAlert(bossDirection = 'boss1') {
   }, 1000);
 
   // Determine message based on layout perspective
-  let directionText = '';
+  let directionParts = { text: '', icon: '' };
+  
   if (isLayoutFlipped) {
     // For opposite side: Boss 1 comes from right, Boss 2 from left
-    directionText = bossDirection === 'boss1' ? 'right' : 'left';
+    if (bossDirection === 'boss1') {
+       // Right side, arrow pointing left (inwards/back)? Or pointing towards content?
+       // Based on user's manual edit "right <===" implies pointing Left.
+       // User previously asked to "Reverse" the big overlay.
+       // Let's match the visual style: Text "Right" + Icon "Arrow Back" (Left)
+       directionParts = { text: 'right', icon: 'arrow_back' };
+    } else {
+       directionParts = { text: 'left', icon: 'arrow_forward' };
+    }
   } else {
     // Normal side: Boss 1 comes from left, Boss 2 from right
-    directionText = bossDirection === 'boss1' ? 'left' : 'right';
+    if (bossDirection === 'boss1') {
+       // Left side, arrow pointing Right ("===>")
+       directionParts = { text: 'left', icon: 'arrow_forward' };
+    } else {
+       directionParts = { text: 'right', icon: 'arrow_back' };
+    }
   }
 
-  const message = `🚨 BOSS ${bossDirection === 'boss1' ? '1' : '2'} ALERT! Coming from ${directionText} side!`;
+  // Construct message with HTML icon
+  // Note: We use a span for the icon. Native notifications will need this stripped.
+  const iconHtml = `<span class="material-icons" style="vertical-align: sub; font-size: 18px;">${directionParts.icon}</span>`;
+  const message = `🚨 BOSS ${bossDirection === 'boss1' ? '1' : '2'} ALERT! Coming from the ${directionParts.text} ${iconHtml}`;
 
   // Send alert to server - always use original boss direction
   socket.emit('send-alert', {
@@ -341,12 +373,37 @@ function handleAlertReceived(data) {
   }
   updateAlertsList();
 
+  // Determine boss direction robustly
+  // Server might drop bossDirection, so fallback to parsing message
+  let bossDirection = data.bossDirection;
+  if (!bossDirection && data.message) {
+      if (data.message.includes('BOSS 1')) bossDirection = 'boss1';
+      else if (data.message.includes('BOSS 2')) bossDirection = 'boss2';
+  }
+  bossDirection = bossDirection || 'boss1'; // Default fallback
+
   // Show boss direction indicator
-  const bossDirection = data.bossDirection || 'boss1';
   const indicator = bossDirection === 'boss1' ? boss1Indicator : boss2Indicator;
+  
+  // Remove active from both first to prevent stuck states
+  boss1Indicator.classList.remove('active');
+  boss2Indicator.classList.remove('active');
+  
+  // Force reflow to restart animation if needed
+  void indicator.offsetWidth;
   
   indicator.classList.add('active');
   setTimeout(() => indicator.classList.remove('active'), 3000);
+  
+  let sideText = '';
+  if (!isLayoutFlipped) {
+      sideText = bossDirection === 'boss1' ? 'LEFT' : 'RIGHT';
+  } else {
+      // Flipped: Boss 1 is Right, Boss 2 is Left
+      sideText = bossDirection === 'boss1' ? 'RIGHT' : 'LEFT';
+  }
+
+  showBigArrowOverlay(sideText);
 
   // Highlight all seats briefly
   const seats = document.querySelectorAll('.seat');
@@ -357,19 +414,72 @@ function handleAlertReceived(data) {
     seats.forEach(seat => seat.classList.remove('alert-active'));
   }, 3000);
 
-  // Play sound if enabled
-  if (settings.soundEnabled) {
+  // Play sound if enabled and not muted
+  if (settings.soundEnabled && !isMuted) {
+    alertAudio.currentTime = 0;
     alertAudio.play().catch(err => console.error('Error playing sound:', err));
   }
 
-  // Show notification
+  // Show notification - ONLY if not muted
   const isSelf = data.sender === currentUsername;
-  if (!isSelf) {
+  if (!isSelf && !isMuted) {
+    // Strip HTML from message for native notification
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = data.message;
+    const plainMessage = tempDiv.textContent || tempDiv.innerText || '';
+
     window.electronAPI.showNotification({
       title: '🚨 BOSS ALERT!',
-      body: `${data.sender}: ${data.message}`
+      body: `${data.sender}: ${plainMessage}`
     });
   }
+}
+
+function showBigArrowOverlay(sideText) {
+    const overlay = document.createElement('div');
+    overlay.className = 'big-arrow-overlay';
+    
+    // Icon: arrow_back (West/Left), arrow_forward (East/Right)
+    // REVERSED as requested: Left Side gets Right Arrow, Right Side gets Left Arrow?
+    // User Request: "The arrow of the overlay right/left side is reverse. Please reverse them."
+    // Previously: LEFT -> arrow_back (Points Left), RIGHT -> arrow_forward (Points Right)
+    // Now: LEFT -> arrow_forward (Points Right), RIGHT -> arrow_back (Points Left)
+    // This implies "Look towards Left" means arrow points Left? Or "Alert FROM Left" means arrow points Right (away)?
+    // Context: "Boss 1 Alert from Left Side". Usually you want to look at the boss? Or run away?
+    // User said "reverse them". So I will flip the icon mapping.
+    const iconName = sideText === 'LEFT' ? 'arrow_forward' : 'arrow_back';
+    
+    overlay.innerHTML = `
+        <div class="big-arrow-container">
+            <span class="material-icons big-arrow-icon">${iconName}</span>
+            <span class="big-arrow-text">${sideText} SIDE</span>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Remove after 2 seconds
+    setTimeout(() => {
+        overlay.style.transition = 'opacity 0.3s';
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 300);
+    }, 2000);
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    const icon = muteBtn.querySelector('.material-icons');
+    if (isMuted) {
+        icon.textContent = 'volume_off';
+        muteBtn.classList.add('active'); // active means muted/alert state here? Or just styled.
+        muteBtn.style.color = '#ff6b6b';
+        showToast('Notifications muted', 'error'); // using error style for visibility
+    } else {
+        icon.textContent = 'volume_up';
+        muteBtn.classList.remove('active');
+        muteBtn.style.color = '';
+        showToast('Notifications unmuted');
+    }
 }
 
 function showToast(message, type = 'success') {
@@ -394,6 +504,9 @@ function showToast(message, type = 'success') {
 // Event listeners
 alertBoss1Btn.addEventListener('click', () => sendAlert('boss1'));
 alertBoss2Btn.addEventListener('click', () => sendAlert('boss2'));
+if (muteBtn) {
+    muteBtn.addEventListener('click', toggleMute);
+}
 
 console.log('Settings button:', settingsBtn);
 

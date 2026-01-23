@@ -22,5 +22,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Notification failed fallback
   onNotificationFailed: (callback) => {
     ipcRenderer.on('notification-failed', callback);
+  },
+  
+  // Toggle mute from shortcut
+  onToggleMute: (callback) => {
+    ipcRenderer.on('toggle-mute', callback);
   }
 });

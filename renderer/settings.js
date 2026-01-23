@@ -6,6 +6,7 @@ const autoStartCheckbox = document.getElementById('autoStart');
 const soundEnabledCheckbox = document.getElementById('soundEnabled');
 const boss1ShortcutSelect = document.getElementById('boss1Shortcut');
 const boss2ShortcutSelect = document.getElementById('boss2Shortcut');
+const muteShortcutSelect = document.getElementById('muteShortcut');
 const cancelBtn = document.getElementById('cancelBtn');
 const successBanner = document.getElementById('successBanner');
 
@@ -19,6 +20,7 @@ async function loadSettings() {
   soundEnabledCheckbox.checked = settings.soundEnabled !== false; // default true
   boss1ShortcutSelect.value = settings.boss1Shortcut || 'numdiv';
   boss2ShortcutSelect.value = settings.boss2Shortcut || 'nummult';
+  muteShortcutSelect.value = settings.muteShortcut || 'numsub';
 }
 
 // Save settings
@@ -31,7 +33,8 @@ settingsForm.addEventListener('submit', async (e) => {
     autoStart: autoStartCheckbox.checked,
     soundEnabled: soundEnabledCheckbox.checked,
     boss1Shortcut: boss1ShortcutSelect.value,
-    boss2Shortcut: boss2ShortcutSelect.value
+    boss2Shortcut: boss2ShortcutSelect.value,
+    muteShortcut: muteShortcutSelect.value
   };
 
   if (!settings.username) {
@@ -45,8 +48,10 @@ settingsForm.addEventListener('submit', async (e) => {
   }
 
   // Check for duplicate shortcuts
-  if (settings.boss1Shortcut === settings.boss2Shortcut) {
-    alert('Boss 1 and Boss 2 shortcuts must be different');
+  const shortcuts = [settings.boss1Shortcut, settings.boss2Shortcut, settings.muteShortcut];
+  const uniqueShortcuts = new Set(shortcuts);
+  if (uniqueShortcuts.size !== shortcuts.length) {
+    alert('All shortcuts must be different');
     return;
   }
 

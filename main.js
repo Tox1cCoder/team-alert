@@ -9,8 +9,10 @@ const store = new Store({
     serverUrl: 'http://localhost:3000',
     autoStart: true,
     soundEnabled: true,
+    soundEnabled: true,
     boss1Shortcut: 'numdiv',  // Numpad /
-    boss2Shortcut: 'nummult'  // Numpad *
+    boss2Shortcut: 'nummult', // Numpad *
+    muteShortcut: 'numsub'    // Numpad -
   }
 });
 
@@ -212,6 +214,7 @@ function registerGlobalShortcuts() {
 
   const boss1Key = store.get('boss1Shortcut') || 'numdiv';
   const boss2Key = store.get('boss2Shortcut') || 'nummult';
+  const muteKey = store.get('muteShortcut') || 'numsub';
 
   // Boss 1 Alert
   const ret1 = globalShortcut.register(boss1Key, () => {
@@ -229,12 +232,21 @@ function registerGlobalShortcuts() {
     }
   });
 
-  if (!ret1 || !ret2) {
+  // Mute Toggle
+  const ret3 = globalShortcut.register(muteKey, () => {
+    console.log(`${muteKey} pressed - toggling mute`);
+    if (mainWindow) {
+      mainWindow.webContents.send('toggle-mute');
+    }
+  });
+
+  if (!ret1 || !ret2 || !ret3) {
     console.log('Global shortcut registration failed');
   } else {
     console.log('Global shortcuts registered successfully');
     console.log(`  ${boss1Key} = Boss 1 Alert`);
     console.log(`  ${boss2Key} = Boss 2 Alert`);
+    console.log(`  ${muteKey} = Toggle Mute`);
   }
 }
 
@@ -246,7 +258,8 @@ ipcMain.handle('get-settings', () => {
     autoStart: store.get('autoStart'),
     soundEnabled: store.get('soundEnabled'),
     boss1Shortcut: store.get('boss1Shortcut'),
-    boss2Shortcut: store.get('boss2Shortcut')
+    boss2Shortcut: store.get('boss2Shortcut'),
+    muteShortcut: store.get('muteShortcut')
   };
 });
 
@@ -255,6 +268,7 @@ ipcMain.handle('save-settings', (event, settings) => {
   const oldServerUrl = store.get('serverUrl');
   const oldBoss1 = store.get('boss1Shortcut');
   const oldBoss2 = store.get('boss2Shortcut');
+  const oldMute = store.get('muteShortcut');
 
   store.set('username', settings.username);
   store.set('serverUrl', settings.serverUrl);
@@ -262,6 +276,7 @@ ipcMain.handle('save-settings', (event, settings) => {
   store.set('soundEnabled', settings.soundEnabled);
   store.set('boss1Shortcut', settings.boss1Shortcut || 'numdiv');
   store.set('boss2Shortcut', settings.boss2Shortcut || 'nummult');
+  store.set('muteShortcut', settings.muteShortcut || 'numsub');
   
   // Update auto-start
   if (settings.autoStart) {
@@ -276,7 +291,7 @@ ipcMain.handle('save-settings', (event, settings) => {
   }
 
   // Check if shortcuts changed - re-register them
-  if (oldBoss1 !== settings.boss1Shortcut || oldBoss2 !== settings.boss2Shortcut) {
+  if (oldBoss1 !== settings.boss1Shortcut || oldBoss2 !== settings.boss2Shortcut || oldMute !== settings.muteShortcut) {
     registerGlobalShortcuts();
   }
 

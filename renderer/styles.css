@@ -63,6 +63,35 @@ h2 .material-icons {
   background-clip: text;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: #b0b0c0;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.icon-btn.active {
+  color: #ff6b6b;
+}
+
 .connection-status {
   display: flex;
   align-items: center;
@@ -95,6 +124,53 @@ h2 .material-icons {
   50% {
     opacity: 0.5;
   }
+}
+
+/* Big Arrow Overlay */
+.big-arrow-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.big-arrow-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #ff6b6b;
+  animation: arrowFlash 0.5s ease-in-out infinite alternate;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.big-arrow-icon {
+  font-size: 180px;
+  font-weight: bold;
+}
+
+.big-arrow-text {
+  font-size: 42px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes arrowFlash {
+  from { transform: scale(1); opacity: 0.8; }
+  to { transform: scale(1.1); opacity: 1; }
 }
 
 /* User Info */
