@@ -4,16 +4,6 @@ A desktop application for instant team communication with boss alerts. Built wit
 
 ![Team Alert Icon](assets/icon.png)
 
-## Features
-
-- 🚨 **Instant Alerts**: Send alerts to all 9 team members with one click
-- ⌨️ **Global Shortcuts**: Press `Numpad /` or `*` from anywhere to send alerts
-- 🔔 **Native Notifications**: Reliable Windows notifications even when app is minimized
-- 🎯 **System Tray**: Runs quietly in background
-- 🚀 **Auto-Start**: Launches automatically with Windows
-- 📊 **Live Status**: See who's online in real-time
-- 📝 **Alert History**: View recent alerts
-
 ## System Requirements
 
 - **Operating System**: Windows 10 or later
@@ -230,15 +220,3 @@ red/
 - [ ] Encrypted connections (WSS)
 - [ ] Alert acknowledgement
 - [ ] Do Not Disturb mode
-
-## License
-
-MIT License
-
-## Support
-
-For issues or questions, contact your IT administrator.
-
----
-
-**Built with ❤️ for team communication**
