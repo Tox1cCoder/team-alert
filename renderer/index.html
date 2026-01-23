@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Alert</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1><span class="material-icons">notifications_active</span> Team Alert System</h1>
+      <div class="connection-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connecting...</span>
+      </div>
+    </div>
+
+    <!-- User Info -->
+    <div class="user-info">
+      <div class="user-name">
+        <span class="material-icons">person</span>
+        <strong>You:</strong> <span id="currentUsername">Not configured</span>
+      </div>
+      <button class="btn-settings" id="settingsBtn">
+        <span class="material-icons">settings</span> Settings
+      </button>
+    </div>
+
+    <!-- Office Layout Section -->
+    <div class="section office-layout-section">
+      <h2><span class="material-icons">business</span> Office Layout</h2>
+      <div class="office-container">
+        <!-- Boss 1 Indicator -->
+        <div class="boss-indicator boss-left" id="boss1Indicator">
+          <div class="boss-label">
+            <span class="material-icons">business_center</span>
+            <span>Boss 1</span>
+          </div>
+          <div class="boss-arrow">
+            <span class="material-icons">arrow_forward</span>
+          </div>
+        </div>
+
+        <!-- Seating Grid -->
+        <div class="seating-grid">
+          <!-- Row 1 -->
+          <div class="seat" data-name="Anh Danh">
+            <div class="seat-name">Anh Danh</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat" data-name="Hiếu">
+            <div class="seat-name">Hiếu</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat" data-name="Phúc">
+            <div class="seat-name">Phúc</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat" data-name="Quí">
+            <div class="seat-name">Quí</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat empty-seat">
+            <div class="seat-name">—</div>
+          </div>
+
+          <!-- Row 2 -->
+          <div class="seat" data-name="Chi Trâm">
+            <div class="seat-name">Chi Trâm</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat" data-name="Chị Diệu">
+            <div class="seat-name">Chị Diệu</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat" data-name="Anh Tấn">
+            <div class="seat-name">Anh Tấn</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat" data-name="Thái">
+            <div class="seat-name">Thái</div>
+            <div class="seat-status"></div>
+          </div>
+          <div class="seat" data-name="Minh">
+            <div class="seat-name">Minh</div>
+            <div class="seat-status"></div>
+          </div>
+        </div>
+
+        <!-- Boss 2 Indicator -->
+        <div class="boss-indicator boss-right" id="boss2Indicator">
+          <div class="boss-arrow">
+            <span class="material-icons">arrow_back</span>
+          </div>
+          <div class="boss-label">
+            <span class="material-icons">business_center</span>
+            <span>Boss 2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Control Section -->
+    <div class="alert-section">
+      <div class="alert-buttons">
+        <button class="alert-button alert-boss1" id="alertBoss1">
+          <span class="material-icons alert-icon">warning</span>
+          <div class="alert-text">BOSS 1 ALERT</div>
+          <div class="alert-subtitle">From left side</div>
+        </button>
+        <button class="alert-button alert-boss2" id="alertBoss2">
+          <span class="material-icons alert-icon">warning</span>
+          <div class="alert-text">BOSS 2 ALERT</div>
+          <div class="alert-subtitle">From right side</div>
+        </button>
+      </div>
+      <div class="alert-hint">
+        <span class="material-icons">keyboard</span>
+        Numpad / = Boss 1 | Numpad * = Boss 2
+      </div>
+    </div>
+
+    <!-- Online Users -->
+    <div class="section">
+      <h2><span class="material-icons">group</span> Team Members (<span id="onlineCount">0</span>)</h2>
+      <div class="users-list" id="usersList">
+        <div class="empty-state">No team members online</div>
+      </div>
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="section">
+      <h2><span class="material-icons">history</span> Recent Alerts</h2>
+      <div class="alerts-list" id="alertsList">
+        <div class="empty-state">No alerts yet</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <small>Running in background • Use system tray to access</small>
+    </div>
+  </div>
+
+  <!-- Load Socket.io from CDN -->
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

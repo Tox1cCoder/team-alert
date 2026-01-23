@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Team Alert</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .settings-container {
+      padding: 24px;
+    }
+
+    .settings-title {
+      font-size: 20px;
+      margin-bottom: 24px;
+      text-align: center;
+      color: #e0e0e0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #b0b0c0;
+    }
+
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: #353548;
+      border: 1px solid #4a4a62;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input[type="text"]:focus {
+      outline: none;
+      border-color: #ff6b6b;
+    }
+
+    .shortcut-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #353548;
+      border: 1px solid #4a4a62;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .shortcut-select:focus {
+      outline: none;
+      border-color: #ff6b6b;
+    }
+
+    .shortcut-select option {
+      background: #2a2a3e;
+      color: #e0e0e0;
+    }
+
+    .form-group-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .form-group-checkbox input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .form-group-checkbox label {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-secondary {
+      background: #3a3a52;
+      color: #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+      background: #4a4a62;
+    }
+
+    .shortcuts-info {
+      background: #2a2a3e;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .shortcuts-info h3 {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #b0b0c0;
+    }
+
+    .shortcut-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 13px;
+    }
+
+    .shortcut-key {
+      background: #353548;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #ff6b6b;
+    }
+
+    .success-banner {
+      background: #51cf66;
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+      display: none;
+    }
+
+    .success-banner.show {
+      display: block;
+      animation: slideIn 0.3s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <h1 class="settings-title">⚙️ Settings</h1>
+
+    <div class="success-banner" id="successBanner">
+      Settings saved successfully!
+    </div>
+
+    <form id="settingsForm">
+      <div class="form-group">
+        <label for="username">Username *</label>
+        <input type="text" id="username" placeholder="Enter your name" required>
+        <div class="form-hint">This name will be shown to other team members</div>
+      </div>
+
+      <div class="form-group">
+        <label for="serverUrl">Server URL *</label>
+        <input type="text" id="serverUrl" placeholder="http://localhost:3000" required>
+      </div>
+
+      <div class="form-group-checkbox">
+        <input type="checkbox" id="autoStart">
+        <label for="autoStart">Start with Windows</label>
+      </div>
+
+      <div class="form-group-checkbox">
+        <input type="checkbox" id="soundEnabled">
+        <label for="soundEnabled">Enable alert sound</label>
+      </div>
+
+      <div class="shortcuts-info">
+        <h3>⌨️ Keyboard Shortcuts</h3>
+        
+        <div class="form-group">
+          <label for="boss1Shortcut">Boss 1 Alert Shortcut</label>
+          <select id="boss1Shortcut" class="shortcut-select">
+            <option value="numdiv">Numpad / (Divide)</option>
+            <option value="nummult">Numpad * (Multiply)</option>
+            <option value="numadd">Numpad + (Add)</option>
+            <option value="numsub">Numpad - (Subtract)</option>
+            <option value="f1">F1</option>
+            <option value="f2">F2</option>
+            <option value="f3">F3</option>
+            <option value="f4">F4</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="boss2Shortcut">Boss 2 Alert Shortcut</label>
+          <select id="boss2Shortcut" class="shortcut-select">
+            <option value="numdiv">Numpad / (Divide)</option>
+            <option value="nummult">Numpad * (Multiply)</option>
+            <option value="numadd">Numpad + (Add)</option>
+            <option value="numsub">Numpad - (Subtract)</option>
+            <option value="f1">F1</option>
+            <option value="f2">F2</option>
+            <option value="f3">F3</option>
+            <option value="f4">F4</option>
+          </select>
+        </div>
+
+        <div class="form-hint" style="margin-top: 8px;">
+          These shortcuts work even when the app is minimized
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
