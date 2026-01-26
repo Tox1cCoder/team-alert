@@ -178,7 +178,7 @@ function updateTrayMenu() {
       type: 'separator'
     },
     {
-      label: 'Boss 1 Alert (Numpad /)',
+      label: 'Boss 1 Alert',
       click: () => {
         if (mainWindow) {
           mainWindow.webContents.send('trigger-alert', { bossDirection: 'boss1' });
@@ -186,7 +186,7 @@ function updateTrayMenu() {
       }
     },
     {
-      label: 'Boss 2 Alert (Numpad *)',
+      label: 'Boss 2 Alert',
       click: () => {
         if (mainWindow) {
           mainWindow.webContents.send('trigger-alert', { bossDirection: 'boss2' });
