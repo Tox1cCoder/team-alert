@@ -1,6 +1,6 @@
 {
   "name": "team-alert-app",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "Team Alert System - Desktop Application",
   "main": "main.js",
   "scripts": {

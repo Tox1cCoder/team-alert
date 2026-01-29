@@ -1,13 +1,17 @@
 {
   "name": "team-alert-server",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "WebSocket server for team alert system",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "keywords": ["websocket", "alert", "team"],
+  "keywords": [
+    "websocket",
+    "alert",
+    "team"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

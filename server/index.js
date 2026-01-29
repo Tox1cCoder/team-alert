@@ -1,8 +1,8 @@
-const express = require('express');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
-const winston = require('winston');
-const config = require('./config');
+const express = require("express");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const winston = require("winston");
+const config = require("./config");
 
 // Initialize Express app
 const app = express();
@@ -12,10 +12,10 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: config.corsOrigin,
-    methods: ['GET', 'POST']
+    methods: ["GET", "POST"],
   },
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
 });
 
 // Configure Winston logger
@@ -25,12 +25,12 @@ const logger = winston.createLogger({
     winston.format.timestamp(),
     winston.format.printf(({ timestamp, level, message }) => {
       return `${timestamp} [${level.toUpperCase()}]: ${message}`;
-    })
+    }),
   ),
   transports: [
     new winston.transports.Console(),
-    new winston.transports.File({ filename: 'server.log' })
-  ]
+    new winston.transports.File({ filename: "server.log" }),
+  ],
 });
 
 // Store connected users
@@ -38,34 +38,34 @@ const connectedUsers = new Map(); // socketId -> { username, socketId, connected
 const alertHistory = []; // Store recent alerts
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get("/health", (req, res) => {
   res.json({
-    status: 'healthy',
+    status: "healthy",
     uptime: process.uptime(),
     connectedUsers: connectedUsers.size,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
 // Get connected users (for debugging)
-app.get('/users', (req, res) => {
-  const users = Array.from(connectedUsers.values()).map(user => ({
+app.get("/users", (req, res) => {
+  const users = Array.from(connectedUsers.values()).map((user) => ({
     username: user.username,
-    connectedAt: user.connectedAt
+    connectedAt: user.connectedAt,
   }));
   res.json({ users, count: users.length });
 });
 
 // Socket.io connection handler
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   logger.info(`New connection: ${socket.id}`);
 
   // Handle user registration
-  socket.on('register', (data) => {
+  socket.on("register", (data) => {
     const { username } = data;
-    
-    if (!username || username.trim() === '') {
-      socket.emit('error', { message: 'Username is required' });
+
+    if (!username || username.trim() === "") {
+      socket.emit("error", { message: "Username is required" });
       return;
     }
 
@@ -73,44 +73,57 @@ io.on('connection', (socket) => {
     connectedUsers.set(socket.id, {
       username: username.trim(),
       socketId: socket.id,
-      connectedAt: new Date().toISOString()
+      connectedAt: new Date().toISOString(),
     });
 
     logger.info(`User registered: ${username} (${socket.id})`);
 
     // Send confirmation to the user
-    socket.emit('registered', {
+    socket.emit("registered", {
       userId: socket.id,
       username: username.trim(),
-      users: getOnlineUsers()
+      users: getOnlineUsers(),
     });
 
     // Notify all other users
-    socket.broadcast.emit('user-joined', {
+    socket.broadcast.emit("user-joined", {
       username: username.trim(),
-      users: getOnlineUsers()
+      users: getOnlineUsers(),
     });
 
     // Send current users list to everyone
-    io.emit('users-update', {
-      users: getOnlineUsers()
+    io.emit("users-update", {
+      users: getOnlineUsers(),
     });
   });
 
   // Handle alert sending
-  socket.on('send-alert', (data) => {
+  socket.on("send-alert", (data) => {
     const user = connectedUsers.get(socket.id);
-    
+
     if (!user) {
-      socket.emit('error', { message: 'User not registered' });
+      socket.emit("error", { message: "User not registered" });
       return;
+    }
+
+    // Calculate sender's perspective direction
+    let senderDirection = "left";
+    if (!data.isFlipped) {
+      // Normal layout: boss1 = left, boss2 = right
+      senderDirection = data.bossDirection === "boss1" ? "left" : "right";
+    } else {
+      // Flipped layout: boss1 = right, boss2 = left
+      senderDirection = data.bossDirection === "boss1" ? "right" : "left";
     }
 
     const alertData = {
       sender: user.username,
       senderId: socket.id,
       timestamp: Date.now(),
-      message: data.message || '🚨 BOSS ALERT! 🚨'
+      message: data.message || "Fallback",
+      bossDirection: data.bossDirection,
+      senderDirection: senderDirection, // Direction from sender's perspective
+      senderIsFlipped: data.isFlipped, // Sender's layout status
     };
 
     // Store in history (keep last 50 alerts)
@@ -119,42 +132,46 @@ io.on('connection', (socket) => {
       alertHistory.pop();
     }
 
-    logger.warn(`ALERT from ${user.username}: ${alertData.message}`);
+    logger.warn(
+      `ALERT from ${user.username}: ${alertData.message} [${data.bossDirection}] sender sees: ${senderDirection} (flipped: ${data.isFlipped})`,
+    );
 
     // Broadcast alert to ALL connected clients (including sender for confirmation)
-    io.emit('alert', alertData);
+    io.emit("alert", alertData);
   });
 
   // Handle heartbeat/ping
-  socket.on('heartbeat', () => {
-    socket.emit('heartbeat-ack', { timestamp: Date.now() });
+  socket.on("heartbeat", () => {
+    socket.emit("heartbeat-ack", { timestamp: Date.now() });
   });
 
   // Get alert history
-  socket.on('get-history', () => {
-    socket.emit('alert-history', {
-      alerts: alertHistory.slice(0, 20) // Send last 20 alerts
+  socket.on("get-history", () => {
+    socket.emit("alert-history", {
+      alerts: alertHistory.slice(0, 20), // Send last 20 alerts
     });
   });
 
   // Handle disconnection
-  socket.on('disconnect', (reason) => {
+  socket.on("disconnect", (reason) => {
     const user = connectedUsers.get(socket.id);
-    
+
     if (user) {
-      logger.info(`User disconnected: ${user.username} (${socket.id}) - Reason: ${reason}`);
-      
+      logger.info(
+        `User disconnected: ${user.username} (${socket.id}) - Reason: ${reason}`,
+      );
+
       // Remove user from connected list
       connectedUsers.delete(socket.id);
 
       // Notify all remaining users
-      io.emit('user-left', {
+      io.emit("user-left", {
         username: user.username,
-        users: getOnlineUsers()
+        users: getOnlineUsers(),
       });
 
-      io.emit('users-update', {
-        users: getOnlineUsers()
+      io.emit("users-update", {
+        users: getOnlineUsers(),
       });
     } else {
       logger.info(`Unknown user disconnected: ${socket.id}`);
@@ -162,17 +179,17 @@ io.on('connection', (socket) => {
   });
 
   // Handle errors
-  socket.on('error', (error) => {
+  socket.on("error", (error) => {
     logger.error(`Socket error for ${socket.id}: ${error.message}`);
   });
 });
 
 // Helper function to get online users list
 function getOnlineUsers() {
-  return Array.from(connectedUsers.values()).map(user => ({
+  return Array.from(connectedUsers.values()).map((user) => ({
     username: user.username,
     socketId: user.socketId,
-    connectedAt: user.connectedAt
+    connectedAt: user.connectedAt,
   }));
 }
 
@@ -189,18 +206,18 @@ httpServer.listen(config.port, () => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM signal received: closing HTTP server");
   httpServer.close(() => {
-    logger.info('HTTP server closed');
+    logger.info("HTTP server closed");
     process.exit(0);
   });
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT signal received: closing HTTP server');
+process.on("SIGINT", () => {
+  logger.info("SIGINT signal received: closing HTTP server");
   httpServer.close(() => {
-    logger.info('HTTP server closed');
+    logger.info("HTTP server closed");
     process.exit(0);
   });
 });
