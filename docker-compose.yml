@@ -4,8 +4,8 @@ services:
   server:
     build: .
     ports:
-      - "3001:3001"
+      - "3003:3003"
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=3003
     restart: unless-stopped
